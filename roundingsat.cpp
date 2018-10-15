@@ -627,6 +627,7 @@ void reduce_by_toplevel(vector<int>& lits, vector<int>& coefs, int& w){
 void process_ineq(vector<int> lits, vector<int> coefs, int w){
 	for(size_t i=0;i<lits.size();i++){
 		if(coefs[i] < 0) lits[i]*=-1,coefs[i]*=-1,w+=coefs[i];
+		if (w > (int) 1e9) { puts("Error: normalization of an input constraint causes degree to exceed 10^9."); exit(1); }
 	}
 	reduce_by_toplevel(lits,coefs,w);
 	if(w <= 0)return;//already satisfied.
@@ -650,6 +651,18 @@ void process_ineq(vector<int> lits, vector<int> coefs, int w){
  * - Negated literals like "~x1"; instead, one could use negative coefficients "-x1"
  * - Nonlinear constraints like "+1 x1 x2 +1 x3 x4 >= 1;"
  */
+int read_number(string s) {
+	long long answer = 0;
+	for (char c : s) if ('0' <= c && c <= '9') {
+		answer *= 10, answer += c - '0';
+		if (answer > (int) 1e9) {
+			printf("Error: number with absolute value larger than 10^9 encountered in the input: %s\n", s.c_str()); exit(1);
+		}
+	}
+	for (char c : s) if (c == '-') answer = -answer;
+	return answer;
+}
+
 void opb_read(istream & in) {
 	for (string line; getline(in, line);) {
 		if (line.empty()) continue;
@@ -671,15 +684,31 @@ void opb_read(istream & in) {
 			istringstream is (line.substr(0, line.find(symbol)));
 			vector<int> lits;
 			vector<int> coefs;
-			int coef;
+			string scoef;
 			string var;
-			while (is >> coef >> var) {
-				assert(coef != 0 && abs(coef) <= (int) 1e9);
-				int x = atoi(var.substr(1).c_str());
-				lits.push_back(x);
-				coefs.push_back(coef);
+			while (is >> scoef >> var) {
+				int coef = read_number(scoef);
+				bool negated = false;
+				string origvar = var;
+				if (!var.empty() && var[0] == '~') {
+					negated = true;
+					var = var.substr(1);
+				}
+				if (var.empty() || var[0] != 'x') {
+					printf("Error: invalid literal token: %s\n", origvar.c_str()); exit(1);
+				}
+				var = var.substr(1);
+				int l = atoi(var.c_str());
+				if (!(1 <= l && l <= n)) {
+					printf("Error: literal token out of variable range: %s\n", origvar.c_str()); exit(1);
+				}
+				if (negated) l = -l;
+				if (coef != 0) {
+					lits.push_back(l);
+					coefs.push_back(coef);
+				}
 			}
-			int w = atoi(line.substr(line.find("=") + 1).c_str());
+			int w = read_number(line.substr(line.find("=") + 1));
 			process_ineq(lits, coefs, w);
 			// Handle equality case with two constraints
 			if (line.find(" = ") != string::npos) {
