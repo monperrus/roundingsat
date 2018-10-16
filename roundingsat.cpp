@@ -646,10 +646,7 @@ void process_ineq(vector<int> lits, vector<int> coefs, int w){
 }
 
 /*
- * Note: the OPB parser does not report most errors.
- * Unsupported is e.g.
- * - Negated literals like "~x1"; instead, one could use negative coefficients "-x1"
- * - Nonlinear constraints like "+1 x1 x2 +1 x3 x4 >= 1;"
+ * The OPB parser does not support nonlinear constraints like "+1 x1 x2 +1 x3 x4 >= 1;"
  */
 int read_number(string s) {
 	long long answer = 0;
