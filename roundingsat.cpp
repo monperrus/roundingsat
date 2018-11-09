@@ -834,8 +834,10 @@ void print_stats() {
 }
 
 void exit_SAT() {
+#ifndef NDEBUG
 	checksol();
 	puts("c SATISFIABLE (checked)");
+#endif
 	print_stats();
 	puts("s SATISFIABLE");
 	printf("v");for(int i=1;i<=n;i++)if(~Level[i])printf(" x%d",i);else printf(" -x%d",i);printf("\n");
