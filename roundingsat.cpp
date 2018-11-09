@@ -203,7 +203,10 @@ int decisionLevel() { return trail_lim.size(); }
 double initial_time;
 int NCONFL=0, NDECIDE=0;
 long long NPROP=0, NIMPL=0;
+double rinc = 2;
+int rfirst = 100;
 int nbclausesbeforereduce=2000;
+int incReduceDB=300;
 // VSIDS ---------------------------------------------------------------
 double var_decay=0.95;
 double var_inc=1.0;
@@ -855,38 +858,65 @@ void usage(int argc, char**argv) {
 	printf("Usage: %s [OPTION] instance.opb\n", argv[0]);
 	printf("\n");
 	printf("Options:\n");
-	printf("  -h [ --help ]                Prints this help message\n");
-	printf("  -v [ --verbosity ] arg (=1)  Set the verbosity of the output.\n");
+	printf("  -h [ --help ]       Prints this help message\n");
+	printf("  -v [ --verbosity ]  Set the verbosity of the output (default %d).\n",verbosity);
+	printf("\n");
+	printf("  --var-decay arg     Set the VSIDS decay factor (0.5<=arg<1; default %lf).\n",var_decay);
+	printf("  --rinc arg          Set the base of the Luby restart sequence (floating point number >=1; default %lf).\n",rinc);
+	printf("  --rfirst arg        Set the interval of the Luby restart sequence (integer >=1; default %d).\n",rfirst);
+}
+
+char * filename;
+
+void read_options(int argc, char**argv) {
+	filename = 0;
+	int sat_opt=-1;
+	static struct option long_options[] =
+	{
+		{"help",      no_argument, 0, 'h'},
+		{"verbosity", required_argument, 0, 'v'},
+		{"var-decay", required_argument, &sat_opt, 0},
+		{"rinc", required_argument, &sat_opt, 1},
+		{"rfirst", required_argument, &sat_opt, 2},
+		{0, 0, 0, 0}
+	};
+	int c;
+	int option_index = 0;
+	while ((c = getopt_long (argc, argv, "hv:", long_options, &option_index)) != -1) {
+		switch (c)
+		{
+			case 'h':
+				usage(argc, argv);
+				exit(0);
+			case 'v':
+				verbosity = atoi(optarg);
+				break;
+			case 0:
+				if (sat_opt == 0) {
+					double v = atof(optarg);
+					if (v >= 0.5 && v < 1) var_decay = v;
+					else printf("Error: invalid value for var decay: %s (should be 0.5 <= value < 1)\n",optarg), exit(1);
+				} else if (sat_opt == 1) {
+					double v = atof(optarg);
+					if (v >= 1) rinc = v;
+					else printf("Error: invalid value for rinc: %s (should be floating point number >=1)\n",optarg), exit(1);
+				} else if (sat_opt == 2) {
+					int v = atoi(optarg);
+					if (v >= 1) rfirst = v;
+					else printf("Error: invalid value for rfirst: %s (should be integer >=1)\n",optarg), exit(1);
+				}
+				break;
+			default:
+				abort();
+		}
+	}
+	if (optind < argc) {
+		filename = argv[optind];
+	}
 }
 
 int main(int argc, char**argv){
-	char * filename = 0;
-	{
-		static struct option long_options[] =
-		{
-			{"help",      no_argument, 0, 'h'},
-			{"verbosity", required_argument, 0, 'v'},
-			{0, 0, 0, 0}
-		};
-		int c;
-		int option_index = 0;
-		while ((c = getopt_long (argc, argv, "hv:", long_options, &option_index)) != -1) {
-			switch (c)
-			{
-				case 'h':
-					usage(argc, argv);
-					exit(0);
-				case 'v':
-					verbosity = atoi(optarg);
-					break;
-				default:
-					abort();
-			}
-		}
-		if (optind < argc) {
-			filename = argv[optind];
-		}
-	}
+	read_options(argc, argv);
 	initial_time = cpuTime();
 	signal(SIGINT, SIGINT_exit);
 	signal(SIGXCPU,SIGINT_exit);
@@ -903,13 +933,10 @@ int main(int argc, char**argv){
 	}
 	signal(SIGINT, SIGINT_interrupt);
 	signal(SIGXCPU,SIGINT_interrupt);
-	double restart_inc = 2;
-	int restart_first = 100;
 	int curr_restarts=0;
-	int nconfl_to_restart=0;
+	long long nconfl_to_restart=0;
 	//reduceDB:
 	int cnt_reduceDB=1;
-	int incReduceDB=300;
 	while (true) {
 		CRef confl = propagate();
 		if (confl != CRef_Undef) {
@@ -961,8 +988,8 @@ int main(int argc, char**argv){
 			if(nconfl_to_restart <= 0){
 				while(decisionLevel()>0)undoOne();
 				qhead = trail.size();
-				double rest_base = luby(restart_inc, curr_restarts++);
-				nconfl_to_restart = rest_base * restart_first;
+				double rest_base = luby(rinc, curr_restarts++);
+				nconfl_to_restart = (long long) rest_base * rfirst;
 			}
 			//if ((int)learnts.size()-(int)trail.size() >= max_learnts)
 			if(NCONFL >= cnt_reduceDB * nbclausesbeforereduce) {
