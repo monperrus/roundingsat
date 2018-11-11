@@ -685,7 +685,7 @@ void opb_read(istream & in) {
 			vector<string> tokens;
 			{ string tmp; while (is >> tmp) tokens.push_back(tmp); }
 			if (tokens.size() % 2 != 0) { printf("Error: non-linear constraints not supported\n"); exit(1); }
-			for (int i=0; i<(int)tokens.size(); i+=2) if (tokens[i].empty() || tokens[i][0]=='x') { printf("Error: non-linear constraints not supported\n"); exit(1); }
+			for (int i=0; i<(int)tokens.size(); i+=2) if (find(tokens[i].begin(),tokens[i].end(),'x')!=tokens[i].end()) { printf("Error: non-linear constraints not supported\n"); exit(1); }
 			for (int i=0; i<(int)tokens.size(); i+=2) {
 				string scoef = tokens[i];
 				string var = tokens[i+1];
