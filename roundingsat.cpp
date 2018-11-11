@@ -62,8 +62,6 @@ using namespace std;
 #include <map>
 #include <set>
 
-#include <getopt.h>
-
 void exit_SAT(),exit_UNSAT(),exit_INDETERMINATE();
 
 // Minisat cpuTime function
@@ -860,60 +858,54 @@ void usage(int argc, char**argv) {
 	printf("Usage: %s [OPTION] instance.opb\n", argv[0]);
 	printf("\n");
 	printf("Options:\n");
-	printf("  -h [ --help ]       Prints this help message\n");
-	printf("  -v [ --verbosity ]  Set the verbosity of the output (default %d).\n",verbosity);
+	printf("  --help           Prints this help message\n");
+	printf("  --verbosity arg  Set the verbosity of the output (default %d).\n",verbosity);
 	printf("\n");
-	printf("  --var-decay arg     Set the VSIDS decay factor (0.5<=arg<1; default %lf).\n",var_decay);
-	printf("  --rinc arg          Set the base of the Luby restart sequence (floating point number >=1; default %lf).\n",rinc);
-	printf("  --rfirst arg        Set the interval of the Luby restart sequence (integer >=1; default %d).\n",rfirst);
+	printf("  --var-decay arg  Set the VSIDS decay factor (0.5<=arg<1; default %lf).\n",var_decay);
+	printf("  --rinc arg       Set the base of the Luby restart sequence (floating point number >=1; default %lf).\n",rinc);
+	printf("  --rfirst arg     Set the interval of the Luby restart sequence (integer >=1; default %d).\n",rfirst);
 }
 
 char * filename;
 
 void read_options(int argc, char**argv) {
-	filename = 0;
-	int sat_opt=-1;
-	static struct option long_options[] =
-	{
-		{"help",      no_argument, 0, 'h'},
-		{"verbosity", required_argument, 0, 'v'},
-		{"var-decay", required_argument, &sat_opt, 0},
-		{"rinc", required_argument, &sat_opt, 1},
-		{"rfirst", required_argument, &sat_opt, 2},
-		{0, 0, 0, 0}
-	};
-	int c;
-	int option_index = 0;
-	while ((c = getopt_long (argc, argv, "hv:", long_options, &option_index)) != -1) {
-		switch (c)
-		{
-			case 'h':
-				usage(argc, argv);
-				exit(0);
-			case 'v':
-				verbosity = atoi(optarg);
-				break;
-			case 0:
-				if (sat_opt == 0) {
-					double v = atof(optarg);
-					if (v >= 0.5 && v < 1) var_decay = v;
-					else printf("Error: invalid value for var decay: %s (should be 0.5 <= value < 1)\n",optarg), exit(1);
-				} else if (sat_opt == 1) {
-					double v = atof(optarg);
-					if (v >= 1) rinc = v;
-					else printf("Error: invalid value for rinc: %s (should be floating point number >=1)\n",optarg), exit(1);
-				} else if (sat_opt == 2) {
-					int v = atoi(optarg);
-					if (v >= 1) rfirst = v;
-					else printf("Error: invalid value for rfirst: %s (should be integer >=1)\n",optarg), exit(1);
-				}
-				break;
-			default:
-				abort();
+	for(int i=1;i<argc;i++){
+		if (!strcmp(argv[i], "--help")) {
+			usage(argc, argv);
+			exit(0);
 		}
 	}
-	if (optind < argc) {
-		filename = argv[optind];
+	vector<string> opts = {"verbosity", "var-decay", "rinc", "rfirst"};
+	map<string, string> opt_val;
+	for(int i=1;i<argc;i++){
+		if (string(argv[i]).substr(0,2) != "--") filename = argv[i];
+		else {
+			bool found = false;
+			for(string key : opts) {
+				if (string(argv[i]).substr(0,key.size()+3)=="--"+key+"=") {
+					found = true;
+					opt_val[key] = string(argv[i]).substr(key.size()+3);
+				}
+			}
+			if (!found)
+				printf("Unknown option: %s. Use '--help' for help.\n",argv[i]),exit(1);
+		}
+	}
+	if (opt_val.count("verbosity")) verbosity = atoi(opt_val["verbosity"].c_str());
+	if (opt_val.count("var-decay")) {
+		double v = atof(opt_val["var-decay"].c_str());
+		if (v >= 0.5 && v < 1) var_decay = v;
+		else printf("Error: invalid value for var decay: %s (should be 0.5 <= value < 1)\n",opt_val["var-decay"].c_str()), exit(1);
+	}
+	if (opt_val.count("rinc")) {
+		double v = atof(opt_val["rinc"].c_str());
+		if (v >= 1) rinc = v;
+		else printf("Error: invalid value for rinc: %s (should be floating point number >=1)\n",opt_val["rinc"].c_str()), exit(1);
+	}
+	if (opt_val.count("rfirst")) {
+		int v = atoi(opt_val["rfirst"].c_str());
+		if (v >= 1) rfirst = v;
+		else printf("Error: invalid value for rfirst: %s (should be integer >=1)\n",opt_val["rfirst"].c_str()), exit(1);
 	}
 }
 
@@ -930,7 +922,7 @@ int main(int argc, char**argv){
 		}
 		opb_read(fin);
 	} else {
-		if (verbosity > 0) printf("c No filename given, reading from standard input\n");
+		if (verbosity > 0) printf("c No filename given, reading from standard input. Use '--help' for help.\n");
 		opb_read(cin);
 	}
 	signal(SIGINT, SIGINT_interrupt);
