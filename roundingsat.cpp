@@ -866,7 +866,7 @@ void usage(int argc, char**argv) {
 	printf("  --rfirst arg     Set the interval of the Luby restart sequence (integer >=1; default %d).\n",rfirst);
 }
 
-char * filename;
+char * filename = 0;
 
 void read_options(int argc, char**argv) {
 	for(int i=1;i<argc;i++){
