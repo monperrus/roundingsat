@@ -183,19 +183,18 @@ struct {
 // ---------------------------------------------------------------------
 int verbosity = 1;
 // currently, the maximum number of variables is hardcoded (variable N), and most arrays are of fixed size.
-const int N = 250000;
 int n;
 vector<CRef> clauses, learnts;
 struct Watch {
 	CRef cref;
 };
-vector<Watch> _adj[2*N+1], *adj=_adj+N;
-CRef _Reason[2*N+1], *Reason=_Reason+N;
+vector<vector<Watch>> _adj; vector<vector<Watch>>::iterator adj;
+vector<CRef> _Reason; vector<CRef>::iterator Reason;
 vector<int> trail;
-int _Level[2*N+1], *Level=_Level+N;
+vector<int> _Level; vector<int>::iterator Level;
 vector<int> trail_lim;
 int qhead; // for unit propagation
-int phase[N+1];
+vector<int> phase;
 void newDecisionLevel() { trail_lim.push_back(trail.size()); }
 int decisionLevel() { return trail_lim.size(); }
 double initial_time;
@@ -208,14 +207,14 @@ int incReduceDB=300;
 // VSIDS ---------------------------------------------------------------
 double var_decay=0.95;
 double var_inc=1.0;
-double activity[N+1];
+vector<double> activity;
 struct{
 	// segment tree (fast implementation of priority queue).
-	int tree[4*(N+1)];
+	vector<int> tree;
 	int h;
-	void init(int n) {
+	void init() {
 		h=0;while((1<<h)<n+1)h++;
-		fill(tree,tree+(1<<(h+1)),-1);
+		tree.resize(1<<(h+1),-1);
 	}
 	void percolateUp(int x) {
 		for(int at=x|(1<<h); at>1; at>>=1){
@@ -355,13 +354,14 @@ struct ConflictData {
 	int cnt_falsified_currentlvl;
 	// here we use int64 because we could get overflow in the following case:
 	// the reason's coefs multiplied by the coef. of the intermediate conflict clause
-	long long _M[2*N+1], *M=_M+N;
+	vector<long long> _M; vector<long long>::iterator M;
 	long long w;
-	bool used[N+1];
+	vector<int> used; // not vector<bool>
 	vector<int> usedlist;
 	void init(){
-		memset(_M,0,sizeof _M);
-		memset(used,0,sizeof used);
+		_M.resize(2*n+1, 0);
+		M = _M.begin() + n;
+		used.resize(n+1, 0);
 		usedlist.reserve(n);
 	}
 	void reset(){
@@ -414,7 +414,7 @@ void round_conflict(long long c) {
 }
 
 void clashing_addition(int l0, vector<int>&reason_lits,vector<int>&reason_coefs,int&reason_w){
-	long long * M = confl_data.M;
+	vector<long long>::iterator M = confl_data.M;
 	long long & w = confl_data.w;
 	w += reason_w;
 	bool overflow = false;
@@ -585,13 +585,14 @@ void init(int nvars){
 		printf("Error: The number of variables is negative.\n");
 		exit(1);
 	}
-	if (nvars > N){
-		printf("Error: The number of variables exceeds the default limit.\n");
-		exit(1);
-	}
 	n = nvars;
 	qhead=0;
-	order_heap.init(nvars);
+	_adj.resize(2*n+1); adj = _adj.begin() + n;
+	_Reason.resize(2*n+1, CRef_Undef); Reason = _Reason.begin() + n;
+	_Level.resize(2*n+1); Level = _Level.begin() + n;
+	phase.resize(n+1);
+	activity.resize(n+1);
+	order_heap.init();
 	for(int i=1;i<=n;i++){
 		Level[i]=Level[-i]=-1;
 		Reason[i]=Reason[-i]=CRef_Undef;
@@ -662,6 +663,7 @@ int read_number(string s) {
 }
 
 void opb_read(istream & in) {
+	bool header_seen = false;
 	for (string line; getline(in, line);) {
 		if (line.empty()) continue;
 		else if (line[0] == '*') {
@@ -673,8 +675,10 @@ void opb_read(istream & in) {
 					exit(1);
 				}
 				init(n);
+				header_seen = true;
 			}
 		} else {
+			if (!header_seen) { printf("Error: read non-comment line before header\n"); exit(1); }
 			string symbol;
 			if (line.find(">=") != string::npos) symbol = ">=";
 			else symbol = "=";
