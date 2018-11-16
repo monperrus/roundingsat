@@ -467,7 +467,10 @@ void analyze(CRef confl, vector<int>& out_lits, vector<int>& out_coefs, int& out
 		confl_data.M[l]=coef;
 		if (Level[-l] == decisionLevel()) confl_data.cnt_falsified_currentlvl++;
 	}
-	if (C.learnt() && C.lbd > 2) C.lbd = min(C.lbd, computeLBD(confl));
+	if (C.learnt()) {
+		claBumpActivity(C);
+		if (C.lbd > 2) C.lbd = min(C.lbd, computeLBD(confl));
+	}
 	vector<int> reason_lits; reason_lits.reserve(n);
 	vector<int> reason_coefs; reason_coefs.reserve(n);
 	int reason_w;
