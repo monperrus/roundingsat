@@ -228,14 +228,14 @@ struct{
 	}
 	int removeMin() {
 		int x = tree[1];
-		assert(~x);
+		assert(x != -1);
 		tree[x|(1<<h)] = -1;
 		for(int at=x|(1<<h); at>1; at>>=1){
-			if(~tree[at^1] && (tree[at]==-1 || activity[tree[at^1]]>activity[tree[at]]))tree[at>>1]=tree[at^1];else tree[at>>1]=tree[at];
+			if(tree[at^1] != -1 && (tree[at]==-1 || activity[tree[at^1]]>activity[tree[at]]))tree[at>>1]=tree[at^1];else tree[at>>1]=tree[at];
 		}
 		return x;
 	}
-	bool inHeap(int v) { return ~tree[v | (1 << h)]; }
+	bool inHeap(int v) { return tree[v | (1 << h)] != -1; }
 } order_heap;
 void insertVarOrder(int x) {
 	if (!order_heap.inHeap(x)) order_heap.insert(x); }
@@ -451,7 +451,7 @@ int computeLBD(CRef cr) {
 	Clause & C = ca[cr];
 	set<int> levels;
 	int * lits = C.lits();
-	for (int i=0; i<(int)C.size(); i++) if (~Level[-lits[i]]) levels.insert(Level[-lits[i]]);
+	for (int i=0; i<(int)C.size(); i++) if (Level[-lits[i]] != -1) levels.insert(Level[-lits[i]]);
 	return (int) levels.size();
 }
 
@@ -566,7 +566,7 @@ int pickBranchLit(){
 	int next = 0;
 
 	// Activity based decision:
-	while (next == 0 || ~Level[next] || ~Level[-next])
+	while (next == 0 || Level[next] != -1 || Level[-next] != -1)
 		if (order_heap.empty()){
 			next = 0;
 			break;
@@ -577,7 +577,7 @@ int pickBranchLit(){
 }
 
 void checksol() {
-	for(int i=1;i<=n;i++)assert(~Level[i] || ~Level[-i]);
+	for(int i=1;i<=n;i++)assert(Level[i] != -1 || Level[-i] != -1);
 	for(CRef cr : clauses)assert(slack(ca[cr]) >= 0);
 }
 
@@ -845,7 +845,7 @@ void exit_SAT() {
 #endif
 	print_stats();
 	puts("s SATISFIABLE");
-	printf("v");for(int i=1;i<=n;i++)if(~Level[i])printf(" x%d",i);else printf(" -x%d",i);printf("\n");
+	printf("v");for(int i=1;i<=n;i++)if(Level[i] != -1)printf(" x%d",i);else printf(" -x%d",i);printf("\n");
 	exit(10);
 }
 
