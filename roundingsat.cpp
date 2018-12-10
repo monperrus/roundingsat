@@ -363,8 +363,12 @@ struct ConflictData {
 		M = _M.begin() + n;
 		used.resize(n+1, 0);
 		usedlist.reserve(n);
+		reset();
 	}
 	void reset(){
+		slack=0;
+		cnt_falsified_currentlvl=0;
+		w=0;
 		for(int x:usedlist)M[x]=M[-x]=0,used[x]=false;
 		usedlist.clear();
 	}
@@ -413,12 +417,12 @@ void round_conflict(long long c) {
 	confl_data.slack = -ceildiv(-confl_data.slack, c);
 }
 
-void clashing_addition(int l0, vector<int>&reason_lits,vector<int>&reason_coefs,int&reason_w){
+template<class It1, class It2> void add_to_conflict(size_t size, It1 const&reason_lits,It2 const&reason_coefs,int reason_w){
 	vector<long long>::iterator M = confl_data.M;
 	long long & w = confl_data.w;
 	w += reason_w;
 	bool overflow = false;
-	for(size_t it=0;it<reason_lits.size();it++){
+	for(size_t it=0;it<size;it++){
 		int l = reason_lits[it];
 		int c = reason_coefs[it];
 		confl_data.use(abs(l));
@@ -457,20 +461,11 @@ int computeLBD(CRef cr) {
 
 void analyze(CRef confl, vector<int>& out_lits, vector<int>& out_coefs, int& out_w){
 	Clause & C = ca[confl];
-	confl_data.slack = slack(C);
-	confl_data.cnt_falsified_currentlvl = 0;
-	confl_data.w = C.w;
-	for(size_t i=0;i<C.size();i++){
-		int l = C.lits()[i];
-		int coef = C.coefs()[i];
-		confl_data.use(abs(l));
-		confl_data.M[l]=coef;
-		if (Level[-l] == decisionLevel()) confl_data.cnt_falsified_currentlvl++;
-	}
 	if (C.learnt()) {
 		claBumpActivity(C);
 		if (C.lbd > 2) C.lbd = min(C.lbd, computeLBD(confl));
 	}
+	add_to_conflict(C.size(), C.lits(), C.coefs(), C.w);
 	vector<int> reason_lits; reason_lits.reserve(n);
 	vector<int> reason_coefs; reason_coefs.reserve(n);
 	int reason_w;
@@ -494,7 +489,7 @@ void analyze(CRef confl, vector<int>& out_lits, vector<int>& out_coefs, int& out
 				reason_lits.clear();
 				reason_coefs.clear();
 				round_reason(l, reason_lits, reason_coefs, reason_w);
-				clashing_addition(l, reason_lits, reason_coefs, reason_w);
+				add_to_conflict(reason_lits.size(), reason_lits, reason_coefs, reason_w);
 			}
 		}
 		int oldlvl=decisionLevel();
