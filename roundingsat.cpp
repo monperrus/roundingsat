@@ -861,11 +861,11 @@ void usage(int argc, char**argv) {
 	printf("\n");
 	printf("Options:\n");
 	printf("  --help           Prints this help message\n");
-	printf("  --verbosity arg  Set the verbosity of the output (default %d).\n",verbosity);
+	printf("  --verbosity=arg  Set the verbosity of the output (default %d).\n",verbosity);
 	printf("\n");
-	printf("  --var-decay arg  Set the VSIDS decay factor (0.5<=arg<1; default %lf).\n",var_decay);
-	printf("  --rinc arg       Set the base of the Luby restart sequence (floating point number >=1; default %lf).\n",rinc);
-	printf("  --rfirst arg     Set the interval of the Luby restart sequence (integer >=1; default %d).\n",rfirst);
+	printf("  --var-decay=arg  Set the VSIDS decay factor (0.5<=arg<1; default %lf).\n",var_decay);
+	printf("  --rinc=arg       Set the base of the Luby restart sequence (floating point number >=1; default %lf).\n",rinc);
+	printf("  --rfirst=arg     Set the interval of the Luby restart sequence (integer >=1; default %d).\n",rfirst);
 }
 
 char * filename = 0;
