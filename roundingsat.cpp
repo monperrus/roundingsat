@@ -466,6 +466,7 @@ void analyze(CRef confl, vector<int>& out_lits, vector<int>& out_coefs, int& out
 		if (C.lbd > 2) C.lbd = min(C.lbd, computeLBD(confl));
 	}
 	add_to_conflict(C.size(), C.lits(), C.coefs(), C.w);
+	confl_data.slack = slack(C);
 	vector<int> reason_lits; reason_lits.reserve(n);
 	vector<int> reason_coefs; reason_coefs.reserve(n);
 	int reason_w;
