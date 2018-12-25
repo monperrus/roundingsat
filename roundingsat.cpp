@@ -226,7 +226,7 @@ struct{
 		tree[x | (1 << h)] = x;
 		percolateUp(x);
 	}
-	int removeMin() {
+	int removeMax() {
 		int x = tree[1];
 		assert(x != -1);
 		tree[x|(1<<h)] = -1;
@@ -567,7 +567,7 @@ int pickBranchLit(){
 			next = 0;
 			break;
 		}else
-			next = order_heap.removeMin();
+			next = order_heap.removeMax();
 
 	return next == 0 ? 0 : phase[next];
 }
